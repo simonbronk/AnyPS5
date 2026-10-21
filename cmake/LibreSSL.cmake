@@ -1,7 +1,5 @@
 find_package(Git REQUIRED)
-get_filename_component(LIBRESSL_GIT_DIR ${GIT_EXECUTABLE} DIRECTORY)
-find_program(PERL_EXECUTABLE NAMES perl HINTS ${LIBRESSL_GIT_DIR}/../usr/bin)
-find_package(Perl REQUIRED)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(LIBRESSL_PORTABLE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/libressl-portable)
 set(LIBRESSL_OPENBSD_DIR ${CMAKE_SOURCE_DIR}/3rdparty/libressl-openbsd/src)
@@ -62,7 +60,8 @@ function(libressl_prepare)
     execute_process(COMMAND ${GIT_EXECUTABLE} -C ${portable} rev-parse HEAD OUTPUT_VARIABLE portableHead OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${GIT_EXECUTABLE} -C ${openbsd} rev-parse HEAD OUTPUT_VARIABLE openbsdHead OUTPUT_STRIP_TRAILING_WHITESPACE)
     file(READ ${CMAKE_CURRENT_FUNCTION_LIST_FILE} script)
-    string(SHA256 scriptHash "${script}")
+    file(READ ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/LibreSSLObjects.py objectsScript)
+    string(SHA256 scriptHash "${script}${objectsScript}")
     set(stamp "${portableHead} ${openbsdHead} ${scriptHash}")
     if(EXISTS ${out}/.anyps5-stamp)
         file(READ ${out}/.anyps5-stamp previous)
@@ -94,18 +93,12 @@ function(libressl_prepare)
     endforeach()
 
     execute_process(
-        COMMAND ${PERL_EXECUTABLE} objects.pl objects.txt obj_mac.num ${out}/include/openssl/obj_mac.h
-        WORKING_DIRECTORY ${libcrypto}/objects
-        RESULT_VARIABLE result)
+        COMMAND ${Python3_EXECUTABLE} -I ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/LibreSSLObjects.py
+            ${libcrypto}/objects ${out}/include/openssl/obj_mac.h ${out}/crypto/objects/obj_dat.h
+        RESULT_VARIABLE result
+        ERROR_QUIET)
     if(NOT result EQUAL 0)
-        message(FATAL_ERROR "LibreSSL objects.pl failed: ${result}")
-    endif()
-    execute_process(
-        COMMAND ${PERL_EXECUTABLE} obj_dat.pl ${out}/include/openssl/obj_mac.h ${out}/crypto/objects/obj_dat.h
-        WORKING_DIRECTORY ${libcrypto}/objects
-        RESULT_VARIABLE result)
-    if(NOT result EQUAL 0)
-        message(FATAL_ERROR "LibreSSL obj_dat.pl failed: ${result}")
+        message(FATAL_ERROR "LibreSSL object table generation failed: ${result}")
     endif()
 
     foreach(header
