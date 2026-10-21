@@ -10,6 +10,15 @@ if(BUILD_TESTING)
     add_test(NAME guest_json COMMAND guest_json_tests)
     add_test(NAME guest_json_numeric_locale COMMAND guest_json_tests --numeric-locale)
     set_tests_properties(guest_json_numeric_locale PROPERTIES SKIP_RETURN_CODE 77)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(numeric_locale_dir "${CMAKE_CURRENT_BINARY_DIR}/numeric-locale")
+        add_test(NAME guest_json_numeric_locale_setup COMMAND sh -c
+            "rm -rf \"$1\" && mkdir -p \"$1\" && { I18NPATH=\"$1\" localedef -c -f \"$2\" -i \"$3\" \"$1/xx_COMMA\"; test -f \"$1/xx_COMMA/LC_NUMERIC\"; }"
+            sh "${numeric_locale_dir}" "${LIBS_INCLUDE_DIR}/tests/comma.charmap" "${LIBS_INCLUDE_DIR}/tests/comma.locale")
+        set_tests_properties(guest_json_numeric_locale_setup PROPERTIES FIXTURES_SETUP json_numeric_locale TIMEOUT 30)
+        set_tests_properties(guest_json_numeric_locale PROPERTIES FIXTURES_REQUIRED json_numeric_locale
+            ENVIRONMENT "LOCPATH=${numeric_locale_dir}")
+    endif()
     if(WIN32)
         set_tests_properties(guest_json guest_json_numeric_locale PROPERTIES ENVIRONMENT_MODIFICATION
             "PATH=path_list_prepend:$<TARGET_FILE_DIR:libSceJson2>")
