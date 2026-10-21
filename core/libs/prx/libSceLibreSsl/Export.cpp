@@ -2,50 +2,167 @@
 #include <cstdint>
 #include "SceTypes.hpp"
 #include "prx/libc/include/General.hpp"
+#include <openssl/aes.h>
+#include <openssl/md4.h>
+#include <openssl/md5.h>
+#include <openssl/rand.h>
+#include <openssl/sha.h>
+
+static_assert(sizeof(MD4_CTX) == 92);
+static_assert(sizeof(MD5_CTX) == 92);
+static_assert(sizeof(SHA_CTX) == 96);
+static_assert(sizeof(SHA256_CTX) == 112);
+static_assert(sizeof(SHA512_CTX) == 216);
+static_assert(sizeof(AES_KEY) == 244);
+
+namespace {
+
+int CheckAesKeyArguments(const unsigned char* userKey, int bits, const AES_KEY* key) {
+    if (!userKey || !key) return -1;
+    if (bits != 128 && bits != 192 && bits != 256) return -2;
+    return 0;
+}
+
+}
 
 extern "C" {
 
 APS5_DUMMY_FUN
-int APS5_VABI AES_cbc_encrypt_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
+
+int APS5_VABI MD4_Init_nid_postfix(MD4_CTX* context) {
+    return MD4_Init(context);
 }
 
-int APS5_VABI AES_cfb128_encrypt_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
+int APS5_VABI MD4_Update_nid_postfix(MD4_CTX* context, const void* data, size_t length) {
+    return MD4_Update(context, data, length);
 }
 
-int APS5_VABI AES_ctr128_encrypt_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
+int APS5_VABI MD4_Final_nid_postfix(unsigned char* digest, MD4_CTX* context) {
+    return MD4_Final(digest, context);
 }
 
-int APS5_VABI AES_decrypt_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
+int APS5_VABI MD5_Init_nid_postfix(MD5_CTX* context) {
+    return MD5_Init(context);
 }
 
-int APS5_VABI AES_ecb_encrypt_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
+int APS5_VABI MD5_Update_nid_postfix(MD5_CTX* context, const void* data, size_t length) {
+    return MD5_Update(context, data, length);
 }
 
-int APS5_VABI AES_encrypt_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
+int APS5_VABI MD5_Final_nid_postfix(unsigned char* digest, MD5_CTX* context) {
+    return MD5_Final(digest, context);
 }
 
-int APS5_VABI AES_set_decrypt_key_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
+int APS5_VABI SHA1_Init_nid_postfix(SHA_CTX* context) {
+    return SHA1_Init(context);
 }
 
-int APS5_VABI AES_set_encrypt_key_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
+int APS5_VABI SHA1_Update_nid_postfix(SHA_CTX* context, const void* data, size_t length) {
+    return SHA1_Update(context, data, length);
 }
 
+int APS5_VABI SHA1_Final_nid_postfix(unsigned char* digest, SHA_CTX* context) {
+    return SHA1_Final(digest, context);
+}
+
+int APS5_VABI SHA224_Init_nid_postfix(SHA256_CTX* context) {
+    return SHA224_Init(context);
+}
+
+int APS5_VABI SHA224_Update_nid_postfix(SHA256_CTX* context, const void* data, size_t length) {
+    return SHA224_Update(context, data, length);
+}
+
+int APS5_VABI SHA224_Final_nid_postfix(unsigned char* digest, SHA256_CTX* context) {
+    return SHA224_Final(digest, context);
+}
+
+int APS5_VABI SHA256_Init_nid_postfix(SHA256_CTX* context) {
+    return SHA256_Init(context);
+}
+
+int APS5_VABI SHA256_Update_nid_postfix(SHA256_CTX* context, const void* data, size_t length) {
+    return SHA256_Update(context, data, length);
+}
+
+int APS5_VABI SHA256_Final_nid_postfix(unsigned char* digest, SHA256_CTX* context) {
+    return SHA256_Final(digest, context);
+}
+
+unsigned char* APS5_VABI SHA256_nid_postfix(const unsigned char* data, size_t length, unsigned char* digest) {
+    static unsigned char staticDigest[SHA256_DIGEST_LENGTH];
+    return SHA256(data, length, digest ? digest : staticDigest);
+}
+
+int APS5_VABI SHA384_Init_nid_postfix(SHA512_CTX* context) {
+    return SHA384_Init(context);
+}
+
+int APS5_VABI SHA384_Update_nid_postfix(SHA512_CTX* context, const void* data, size_t length) {
+    return SHA384_Update(context, data, length);
+}
+
+int APS5_VABI SHA384_Final_nid_postfix(unsigned char* digest, SHA512_CTX* context) {
+    return SHA384_Final(digest, context);
+}
+
+int APS5_VABI SHA512_Init_nid_postfix(SHA512_CTX* context) {
+    return SHA512_Init(context);
+}
+
+int APS5_VABI SHA512_Update_nid_postfix(SHA512_CTX* context, const void* data, size_t length) {
+    return SHA512_Update(context, data, length);
+}
+
+int APS5_VABI SHA512_Final_nid_postfix(unsigned char* digest, SHA512_CTX* context) {
+    return SHA512_Final(digest, context);
+}
+
+int APS5_VABI AES_set_encrypt_key_nid_postfix(const unsigned char* userKey, int bits, AES_KEY* key) {
+    if (const int result = CheckAesKeyArguments(userKey, bits, key); result != 0) return result;
+    return AES_set_encrypt_key(userKey, bits, key);
+}
+
+int APS5_VABI AES_set_decrypt_key_nid_postfix(const unsigned char* userKey, int bits, AES_KEY* key) {
+    if (const int result = CheckAesKeyArguments(userKey, bits, key); result != 0) return result;
+    return AES_set_decrypt_key(userKey, bits, key);
+}
+
+void APS5_VABI AES_encrypt_nid_postfix(const unsigned char* in, unsigned char* out, const AES_KEY* key) {
+    AES_encrypt(in, out, key);
+}
+
+void APS5_VABI AES_decrypt_nid_postfix(const unsigned char* in, unsigned char* out, const AES_KEY* key) {
+    AES_decrypt(in, out, key);
+}
+
+void APS5_VABI AES_ecb_encrypt_nid_postfix(const unsigned char* in, unsigned char* out, const AES_KEY* key, int enc) {
+    AES_ecb_encrypt(in, out, key, enc);
+}
+
+void APS5_VABI AES_cbc_encrypt_nid_postfix(const unsigned char* in, unsigned char* out, size_t length, const AES_KEY* key, unsigned char* ivec, int enc) {
+    AES_cbc_encrypt(in, out, length, key, ivec, enc);
+}
+
+void APS5_VABI AES_cfb128_encrypt_nid_postfix(const unsigned char* in, unsigned char* out, size_t length, const AES_KEY* key, unsigned char* ivec, int* num, int enc) {
+    AES_cfb128_encrypt(in, out, length, key, ivec, num, enc);
+}
+
+void APS5_VABI AES_ctr128_encrypt_nid_postfix(const unsigned char* in, unsigned char* out, size_t length, const AES_KEY* key, unsigned char* ivec, unsigned char* counter, unsigned int* num) {
+    AES_ctr128_encrypt(in, out, length, key, ivec, counter, num);
+}
+
+int APS5_VABI RAND_bytes_nid_postfix(unsigned char* buffer, int length) {
+    return RAND_bytes(buffer, length);
+}
+
+int APS5_VABI RAND_status_nid_postfix(void) {
+    return RAND_status();
+}
+
+void APS5_VABI RAND_add_nid_postfix(const void* buffer, int length, double entropy) {
+    RAND_add(buffer, length, entropy);
+}
 int APS5_VABI ASN1_INTEGER_get_nid_postfix(void) {
     NotImplemented_nid_no_patch(__func__);
     return 0;
@@ -846,36 +963,6 @@ int APS5_VABI HMAC_Update_nid_postfix(void) {
     return 0;
 }
 
-int APS5_VABI MD4_Final_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI MD4_Init_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI MD4_Update_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI MD5_Final_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI MD5_Init_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI MD5_Update_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
 int APS5_VABI OBJ_cleanup_nid_postfix(void) {
     NotImplemented_nid_no_patch(__func__);
     return 0;
@@ -1026,27 +1113,12 @@ int APS5_VABI PKCS12_parse_nid_postfix(void) {
     return 0;
 }
 
-int APS5_VABI RAND_add_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI RAND_bytes_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
 int APS5_VABI RAND_file_name_nid_postfix(void) {
     NotImplemented_nid_no_patch(__func__);
     return 0;
 }
 
 int APS5_VABI RAND_load_file_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI RAND_status_nid_postfix(void) {
     NotImplemented_nid_no_patch(__func__);
     return 0;
 }
@@ -1112,86 +1184,6 @@ int APS5_VABI RSA_verify_nid_postfix(void) {
 }
 
 int APS5_VABI RSA_verify_PKCS1_PSS_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA1_Final_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA1_Init_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA1_Update_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA224_Final_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA224_Init_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA224_Update_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA256_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA256_Final_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA256_Init_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA256_Update_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA384_Final_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA384_Init_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA384_Update_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA512_Final_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA512_Init_nid_postfix(void) {
-    NotImplemented_nid_no_patch(__func__);
-    return 0;
-}
-
-int APS5_VABI SHA512_Update_nid_postfix(void) {
     NotImplemented_nid_no_patch(__func__);
     return 0;
 }
