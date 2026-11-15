@@ -48,8 +48,10 @@ namespace {
 constexpr std::int64_t WmpErrSuccess = 0;
 constexpr std::int64_t WmpErrAbstractMethod = -3;
 constexpr std::int64_t WmpErrOutOfMemory = -101;
+constexpr std::int64_t WmpErrFileIO = -102;
 constexpr std::int64_t WmpErrUnsupportedFormat = -106;
 constexpr std::int64_t WmpErrBufferOverflow = -103;
+constexpr std::size_t FileHandle = 0;
 constexpr std::size_t MemoryBuffer = 0;
 constexpr std::size_t MemorySize = 1;
 constexpr std::size_t MemoryPosition = 2;
@@ -78,8 +80,31 @@ std::int64_t AllocateZeroed(void** out, std::size_t size) {
     return *out ? WmpErrSuccess : WmpErrOutOfMemory;
 }
 
-std::int64_t APS5_VABI CreateStreamFromFilename_nid_no_patch(Jxr::Stream**, const char*, const char*) {
-    NotImplemented_nid_no_patch(__func__);
+std::int64_t APS5_VABI CloseWS_File_nid_no_patch(Jxr::Stream** stream) {
+    if (!stream || !*stream) APS5_INVALID_ARG_EX;
+    auto* file = reinterpret_cast<FileStream*>((*stream)->state[FileHandle]);
+    if (file != nullptr) fclose_nid_postfix(file);
+    return WMPFree_nid_postfix(reinterpret_cast<void**>(stream));
+}
+
+std::int64_t APS5_VABI CreateStreamFromFilename_nid_no_patch(Jxr::Stream** stream, const char* filename, const char* mode) {
+    if (!stream || !filename || !mode) APS5_INVALID_ARG_EX;
+    const auto result = WMPAlloc_nid_postfix(reinterpret_cast<void**>(stream), sizeof(Jxr::Stream));
+    if (result < 0) return result;
+    auto* created = *stream;
+    auto* file = fopen_nid_postfix(filename, mode);
+    if (file == nullptr) {
+        WMPFree_nid_postfix(reinterpret_cast<void**>(stream));
+        return WmpErrFileIO;
+    }
+    created->state[FileHandle] = reinterpret_cast<std::uintptr_t>(file);
+    created->close = CloseWS_File_nid_no_patch;
+    created->end = EOSWS_File_nid_postfix;
+    created->read = ReadWS_File_nid_postfix;
+    created->write = WriteWS_File_nid_postfix;
+    created->setPosition = SetPosWS_File_nid_postfix;
+    created->getPosition = GetPosWS_File_nid_postfix;
+    return WmpErrSuccess;
 }
 
 std::int64_t APS5_VABI CloseWS_Memory_nid_no_patch(Jxr::Stream** stream) {
